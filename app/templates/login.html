@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner Gateway — Discord Control Panel</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="display:flex; align-items:center; justify-content:center; min-height:100vh; background-color:var(--bg-base);">
+
+  <div class="card" style="width:100%; max-width:400px; padding:2rem; box-shadow:var(--shadow-lg); border-color:var(--border);">
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.5rem;">
+      <div style="width:36px; height:36px; background-color:var(--accent-light); border:1px solid rgba(79, 70, 229, 0.3); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 style="font-size:1.15rem; font-weight:700; color:#fff; letter-spacing:-0.01em;">Private Control Gateway</h1>
+        <div style="font-size:0.75rem; color:var(--text-dim);">Authorized Operator Access Only</div>
+      </div>
+    </div>
+
+    <div id="login-error" class="alert alert-danger" style="display:none;"></div>
+
+    <form onsubmit="handleOwnerLogin(event)">
+      <div class="form-group">
+        <label class="form-label">Operator Identifier</label>
+        <input type="text" id="owner-identifier" class="form-input" required placeholder="admin" autofocus>
+      </div>
+      <div class="form-group" style="margin-bottom:1.5rem;">
+        <label class="form-label">Security Key / Password</label>
+        <input type="password" id="owner-password" class="form-input" required placeholder="••••••••">
+      </div>
+      <button type="submit" id="btn-login-submit" class="btn btn-primary btn-block" style="padding:0.65rem;">
+        Authenticate Session &rarr;
+      </button>
+    </form>
+
+    <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border); font-size:0.75rem; color:var(--text-dim); display:flex; justify-content:space-between; align-items:center;">
+      <span>Default: <code>admin</code></span>
+      <span style="display:flex; align-items:center; gap:4px;">
+        <span style="width:6px; height:6px; border-radius:50%; background-color:var(--success);"></span> System Standby
+      </span>
+    </div>
+  </div>
+
+  <script>
+    async function handleOwnerLogin(e) {
+      e.preventDefault();
+      const identifier = document.getElementById('owner-identifier').value.trim();
+      const password = document.getElementById('owner-password').value;
+      const errBox = document.getElementById('login-error');
+      const btn = document.getElementById('btn-login-submit');
+
+      errBox.style.display = 'none';
+      btn.disabled = true;
+      btn.innerText = 'Verifying...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Authentication rejected');
+        window.location.href = '/';
+      } catch (err) {
+        errBox.innerText = err.message;
+        errBox.style.display = 'block';
+        btn.disabled = false;
+        btn.innerText = 'Authenticate Session →';
+      }
+    }
+  </script>
+</body>
+</html>

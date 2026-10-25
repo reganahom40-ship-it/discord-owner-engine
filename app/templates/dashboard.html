@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Private Owner Control Center — Discord Automation Engine</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="brand-section">
+      <div class="brand-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:#818cf8;">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span>DISCORD AUTOMATION ENGINE</span>
+      </div>
+      <div class="status-pill" id="top-bot-status">
+        <span class="status-dot warning"></span> Bot: Unconfigured
+      </div>
+      <div class="status-pill" id="top-worker-status">
+        <span class="status-dot online"></span> Daemon: Active
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div style="display:flex; align-items:center; gap:0.35rem; font-size:0.74rem; color:var(--text-muted);">
+        <span>Auto-Sync:</span>
+        <select id="poll-interval-select" onchange="updatePollInterval(this.value)" class="form-select" style="width:auto; padding:0.18rem 0.45rem; font-size:0.72rem;">
+          <option value="5000" selected>5s Live</option>
+          <option value="15000">15s</option>
+          <option value="30000">30s</option>
+          <option value="0">Paused</option>
+        </select>
+      </div>
+      <span style="font-size:0.76rem; color:var(--text-muted);"><strong style="color:#fff;">Operator:</strong> admin</span>
+      <button onclick="switchTab('settings')" class="btn btn-secondary btn-sm">Integrations</button>
+      <button onclick="handleOwnerLogout()" class="btn btn-secondary btn-sm">Logout</button>
+    </div>
+  </header>
+
+  <!-- Application Layout -->
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="app-sidebar">
+      <div class="sidebar-heading">Command Modules</div>
+      <button class="nav-item active" id="btn-nav-overview" onclick="switchTab('overview')">
+        <span class="nav-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Overview & Console
+        </span>
+      </button>
+      <button class="nav-item" id="btn-nav-advertising" onclick="switchTab('advertising')">
+        <span class="nav-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          Advertising Studio
+        </span>
+        <span class="nav-counter" id="nav-count-campaigns">0</span>
+      </button>
+      <button class="nav-item" id="btn-nav-tasks" onclick="switchTab('tasks')">
+        <span class="nav-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Quest & Task Queue
+        </span>
+        <span class="nav-counter" id="nav-count-tasks">0</span>
+      </button>
+      <button class="nav-item" id="btn-nav-members" onclick="switchTab('members')">
+        <span class="nav-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Member & Guild Ops
+        </span>
+      </button>
+      <button class="nav-item" id="btn-nav-boost" onclick="switchTab('boost')">
+        <span class="nav-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>
+          Server Boost Matrix
+        </span>
+      </button>
+
+      <div class="sidebar-heading" style="margin-top:0.75rem;">Infrastructure</div>
+      <button class="nav-item" id="btn-nav-keys" onclick="switchTab('keys')">
+        <span class="nav-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-1.5 1.5L14 9l-1.5-1.5L10 10l2 2-7 7H2v-3l7-7-1.5-1.5L9 6l3.5 3.5L14 8l1.5 1.5L17 8z"/></svg>
+          Internal Node Keys
+        </span>
+        <span class="nav-counter" id="nav-count-keys">0</span>
+      </button>
+      <button class="nav-item" id="btn-nav-settings" onclick="switchTab('settings')">
+        <span class="nav-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Integrations & Cloud
+        </span>
+      </button>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="main-viewport">
+
+      <!-- VIEW 1: OVERVIEW & LIVE CONSOLE -->
+      <section class="tab-view" id="view-overview">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Operational Command Center</h1>
+            <div class="page-subtitle">Real-time daemon telemetry, quick-fire operations, and live background worker console.</div>
+          </div>
+          <div style="display:flex; gap:0.45rem; flex-wrap:wrap;">
+            <button onclick="dispatchTaskType('bot_ping', 'Discord REST Latency Ping', true)" class="btn btn-secondary btn-sm">📡 Ping Bot API</button>
+            <button onclick="dispatchTaskType('quest_sync', 'Quest Role Connection Sync', true)" class="btn btn-secondary btn-sm">⚡ Sync Quests</button>
+            <button onclick="openBroadcastStudio()" class="btn btn-primary btn-sm">+ New Broadcast</button>
+            <button onclick="loadOverview()" class="btn btn-secondary btn-sm">Refresh</button>
+          </div>
+        </div>
+
+        <div class="grid-4">
+          <div class="card stat-box">
+            <div class="stat-box-label">Active / Completed Jobs</div>
+            <div class="stat-box-value" id="stat-running-tasks">0</div>
+            <div class="stat-box-sub" id="stat-completed-sub">0 completed total</div>
+          </div>
+          <div class="card stat-box">
+            <div class="stat-box-label">Queued / Failed Jobs</div>
+            <div class="stat-box-value" id="stat-pending-tasks">0</div>
+            <div class="stat-box-sub" id="stat-failed-sub">0 failed jobs</div>
+          </div>
+          <div class="card stat-box">
+            <div class="stat-box-label">Active Broadcasts</div>
+            <div class="stat-box-value" id="stat-active-campaigns">0</div>
+            <div class="stat-box-sub" id="stat-processed-sub">0 cycles executed</div>
+          </div>
+          <div class="card stat-box">
+            <div class="stat-box-label">Webhooks & Node Keys</div>
+            <div class="stat-box-value" id="stat-webhooks">0</div>
+            <div class="stat-box-sub" id="stat-keys-sub">0 active keys</div>
+          </div>
+        </div>
+
+        <!-- Live Daemon Terminal Console -->
+        <div class="card" style="margin-bottom:1.15rem;">
+          <div class="card-header">
+            <h3 class="card-title">
+              <span class="status-dot online"></span> Live Background Worker Console
+            </h3>
+            <span style="font-size:0.72rem; color:var(--text-dim);" id="worker-last-cycle-label">Cycle: Active</span>
+          </div>
+          <div class="terminal-box" id="daemon-console-box">
+            <div class="terminal-line"><span class="terminal-ts">--:--:--</span><span class="terminal-lvl INFO">INFO</span><span class="terminal-msg">Connecting to background daemon log stream...</span></div>
+          </div>
+        </div>
+
+        <!-- Audit Log Table with Search -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">System Audit Trail</h3>
+            <input type="text" id="audit-search-input" oninput="filterAuditTable()" class="form-input" placeholder="Search events, details, IP..." style="max-width:240px; padding:0.32rem 0.6rem; font-size:0.76rem;">
+          </div>
+          <div class="table-wrap">
+            <table class="dense-table">
+              <thead>
+                <tr>
+                  <th>Event Tag</th>
+                  <th>Execution Details</th>
+                  <th>Source IP</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="overview-logs-table">
+                <tr><td colspan="4" style="text-align:center; color:var(--text-dim); padding:1.5rem;">Loading audit records...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: ADVERTISING & EMBED STUDIO -->
+      <section class="tab-view" id="view-advertising" style="display:none;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Broadcast & Embed Studio</h1>
+            <div class="page-subtitle">Design rich Discord embeds, test webhook latency, and automate recurring channel transmissions.</div>
+          </div>
+          <button onclick="openBroadcastStudio()" class="btn btn-primary btn-sm">+ Launch Embed Studio</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="dense-table">
+            <thead>
+              <tr>
+                <th>Campaign Title</th>
+                <th>Embed Header</th>
+                <th>Runs</th>
+                <th>Interval</th>
+                <th>Latency</th>
+                <th>Status</th>
+                <th>Next Run</th>
+                <th>Controls</th>
+              </tr>
+            </thead>
+            <tbody id="campaigns-table-body">
+              <tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:1.5rem;">Loading broadcasts...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- VIEW 3: QUEST & TASK QUEUE -->
+      <section class="tab-view" id="view-tasks" style="display:none;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Quest & Asynchronous Task Engine</h1>
+            <div class="page-subtitle">Execute authorized Discord Quest role-connection metadata syncs, bot diagnostics, and guild audits.</div>
+          </div>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button onclick="dispatchTaskType('quest_sync', 'Developer Quest Role Metadata Sync', true)" class="btn btn-primary btn-sm">⚡ Sync Quest Metadata</button>
+            <button onclick="dispatchTaskType('bot_ping', 'Discord REST Latency Check', true)" class="btn btn-secondary btn-sm">📡 Bot Ping</button>
+            <button onclick="dispatchTaskType('token_health', 'Bot Token & Guilds Audit', true)" class="btn btn-secondary btn-sm">🛡️ Token Health</button>
+            <button onclick="dispatchTaskType('guild_audit', 'Default Guild Telemetry Audit', true)" class="btn btn-secondary btn-sm">🔍 Guild Audit</button>
+            <button onclick="clearCompletedTasksAction()" class="btn btn-danger btn-sm">Purge Finished</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="dense-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Task Name & Type</th>
+                <th>Progress</th>
+                <th>Status</th>
+                <th>Diagnostics / Output</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tasks-table-body">
+              <tr><td colspan="6" style="text-align:center; color:var(--text-dim); padding:1.5rem;">Loading queue...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- VIEW 4: MEMBER & GUILD OPS -->
+      <section class="tab-view" id="view-members" style="display:none;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Member Operations & OAuth2 Permission Builder</h1>
+            <div class="page-subtitle">Explore servers your bot is connected to, inspect member/role counts, and build custom OAuth2 links.</div>
+          </div>
+          <button onclick="loadConnectedBotGuilds()" class="btn btn-secondary btn-sm">🔄 Refresh Bot Servers</button>
+        </div>
+
+        <!-- Connected Bot Guilds List -->
+        <div class="card" style="margin-bottom:1.15rem;">
+          <div class="card-header">
+            <h3 class="card-title">Connected Bot Servers (<code id="connected-guilds-count">0</code>)</h3>
+            <span style="font-size:0.74rem; color:var(--text-muted);">Click any server below to inspect live member and role telemetry</span>
+          </div>
+          <div id="bot-guilds-grid" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+            <span style="color:var(--text-dim); font-size:0.78rem;">Configure a Bot Token in Integrations to list joined servers.</span>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Manual Guild Inspector -->
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom:0.65rem;">Live Server Member & Role Inspector</h3>
+            <div style="display:flex; gap:0.5rem; margin-bottom:0.85rem;">
+              <input type="text" id="input-member-guild-id" class="form-input" placeholder="Enter Discord Guild / Server ID">
+              <button onclick="queryGuildTelemetry('members')" class="btn btn-primary">Inspect Server</button>
+            </div>
+            <div id="members-result-card" style="display:none;"></div>
+          </div>
+
+          <!-- Interactive OAuth2 Permission Calculator -->
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom:0.4rem;">OAuth2 Bot Invite & Permission Calculator</h3>
+            <p style="color:var(--text-muted); font-size:0.76rem; margin-bottom:0.6rem;">Select required bot permissions to compute the bitmask and generate an onboarding URL:</p>
+            <div class="perm-grid" id="oauth-perm-grid">
+              <label class="perm-item"><input type="checkbox" value="8" checked onchange="recalcOAuthUrl()"> Administrator (8)</label>
+              <label class="perm-item"><input type="checkbox" value="32" onchange="recalcOAuthUrl()"> Manage Server (32)</label>
+              <label class="perm-item"><input type="checkbox" value="268435456" onchange="recalcOAuthUrl()"> Manage Roles</label>
+              <label class="perm-item"><input type="checkbox" value="16" onchange="recalcOAuthUrl()"> Manage Channels</label>
+              <label class="perm-item"><input type="checkbox" value="536870912" onchange="recalcOAuthUrl()"> Manage Webhooks</label>
+              <label class="perm-item"><input type="checkbox" value="2" onchange="recalcOAuthUrl()"> Kick Members</label>
+              <label class="perm-item"><input type="checkbox" value="4" onchange="recalcOAuthUrl()"> Ban Members</label>
+              <label class="perm-item"><input type="checkbox" value="2048" onchange="recalcOAuthUrl()"> Send Messages</label>
+            </div>
+            <div style="display:flex; gap:0.45rem; align-items:center; margin-top:0.65rem;">
+              <input type="text" id="computed-oauth-url" class="form-input" readonly placeholder="Configure Client ID in Integrations..." style="font-family:var(--font-mono); font-size:0.74rem;">
+              <button onclick="copyTextValue('computed-oauth-url')" class="btn btn-secondary btn-sm">Copy</button>
+              <button onclick="openComputedOAuthUrl()" class="btn btn-primary btn-sm">Open &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: SERVER BOOST MATRIX -->
+      <section class="tab-view" id="view-boost" style="display:none;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Server Boost Telemetry & Perk Matrix</h1>
+            <div class="page-subtitle">Real-time Nitro boost count, tier progress gauge, and unlocked server capabilities via Discord API.</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1.15rem;">
+          <div style="display:flex; gap:0.65rem; align-items:center; flex-wrap:wrap;">
+            <strong style="color:#fff; font-size:0.84rem;">Target Server ID:</strong>
+            <input type="text" id="input-boost-guild-id" class="form-input" placeholder="Enter Discord Guild / Server ID" style="max-width:320px;">
+            <button onclick="queryGuildTelemetry('boost')" class="btn btn-primary">Query Boost Telemetry</button>
+          </div>
+        </div>
+
+        <div id="boost-result-card" style="display:none;"></div>
+      </section>
+
+      <!-- VIEW 6: INTERNAL NODE KEYS -->
+      <section class="tab-view" id="view-keys" style="display:none;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Internal Node & Tool Authorization Keys</h1>
+            <div class="page-subtitle">Generate batch cryptographic keys with custom prefixes to authenticate external scripts or worker nodes.</div>
+          </div>
+          <button onclick="exportKeysJson()" class="btn btn-secondary btn-sm">⬇ Export JSON</button>
+        </div>
+
+        <!-- Inline Key Generator Bar -->
+        <div class="card" style="margin-bottom:1.15rem;">
+          <div style="display:grid; grid-template-columns: 2fr 1fr 1.2fr 1fr 0.8fr auto; gap:0.65rem; align-items:end;">
+            <div>
+              <label class="form-label">Node / Key Label</label>
+              <input type="text" id="key-gen-label" class="form-input" placeholder="e.g. Cloud Worker Alpha">
+            </div>
+            <div>
+              <label class="form-label">Prefix</label>
+              <select id="key-gen-prefix" class="form-select">
+                <option value="OWN">OWN-</option>
+                <option value="NODE">NODE-</option>
+                <option value="BOT">BOT-</option>
+                <option value="API">API-</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Service Scope</label>
+              <select id="key-gen-scope" class="form-select">
+                <option value="all">All Modules (Full)</option>
+                <option value="advertising">Advertising Only</option>
+                <option value="quest_automation">Quest Automation</option>
+                <option value="guild_telemetry">Guild Telemetry</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Duration (Days)</label>
+              <input type="number" id="key-gen-days" class="form-input" value="90" min="0">
+            </div>
+            <div>
+              <label class="form-label">Batch Qty</label>
+              <input type="number" id="key-gen-count" class="form-input" value="1" min="1" max="25">
+            </div>
+            <button onclick="generateInternalKeyAction()" class="btn btn-primary" style="height:34px;">+ Generate</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="dense-table">
+            <thead>
+              <tr>
+                <th>Authorization Key</th>
+                <th>Assigned Label</th>
+                <th>Scope</th>
+                <th>Status</th>
+                <th>Expiration</th>
+                <th>Controls</th>
+              </tr>
+            </thead>
+            <tbody id="internal-keys-table">
+              <tr><td colspan="6" style="text-align:center; color:var(--text-dim); padding:1.5rem;">Loading authorization keys...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- VIEW 7: SETTINGS, INTEGRATIONS & 24/7 CLOUD -->
+      <section class="tab-view" id="view-settings" style="display:none;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Integrations, Webhooks & 24/7 Cloud Hosting</h1>
+            <div class="page-subtitle">Configure Discord Bot credentials, manage webhooks, and deploy to 24/7 cloud infrastructure.</div>
+          </div>
+        </div>
+
+        <!-- 24/7 Cloud Hosting Banner -->
+        <div class="card" style="margin-bottom:1.15rem; border-color:rgba(99, 102, 241, 0.45); background:linear-gradient(135deg, rgba(79,70,229,0.12), rgba(17,20,29,0.95));">
+          <div class="card-header" style="margin-bottom:0.4rem;">
+            <h3 class="card-title" style="color:#a5b4fc;">☁️ 24/7 Cloud Deployment (Zero PC Uptime Required)</h3>
+            <span class="badge badge-info">Fly.io • Render • Railway • Docker Ready</span>
+          </div>
+          <p style="color:var(--text-muted); font-size:0.79rem; margin-bottom:0.65rem;">
+            This repository is pre-configured with <code>Dockerfile</code>, <code>fly.toml</code> (with <code>min_machines_running = 1</code> and persistent <code>/data</code> volume), <code>render.yaml</code>, and <code>railway.json</code> so your scheduled broadcasts and background workers run 24/7 in the cloud even when your PC is turned off.
+          </p>
+          <div style="display:flex; gap:0.6rem; flex-wrap:wrap; font-size:0.76rem;">
+            <div style="background-color:var(--bg-base); padding:0.45rem 0.75rem; border-radius:var(--radius-sm); border:1px solid var(--border);">
+              <strong>Option 1 (Fly.io CLI Installed):</strong> Double-click <code>deploy_cloud.bat</code> in your project folder
+            </div>
+            <div style="background-color:var(--bg-base); padding:0.45rem 0.75rem; border-radius:var(--radius-sm); border:1px solid var(--border);">
+              <strong>Option 2 (Render / Railway):</strong> Push repo to GitHub &rarr; New Web Service &rarr; Auto-deploys via <code>Dockerfile</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Discord Bot API Credentials -->
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom:0.75rem;">Discord Developer Credentials</h3>
+            <form onsubmit="saveSettingsAction(event)">
+              <div class="form-group">
+                <label class="form-label">Discord Bot Token</label>
+                <div style="display:flex; gap:0.45rem;">
+                  <input type="password" id="set-bot-token" class="form-input" placeholder="Paste bot token (or TEST_BOT_TOKEN_1 for simulation)">
+                  <button type="button" onclick="testBotTokenAction()" class="btn btn-secondary btn-sm">Verify Token</button>
+                </div>
+              </div>
+              <div id="bot-verify-result-box" style="display:none; margin-bottom:0.75rem;"></div>
+              <div class="form-group">
+                <label class="form-label">Discord Application / Client ID</label>
+                <input type="text" id="set-client-id" class="form-input" placeholder="e.g. 123456789012345678">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Discord Client Secret</label>
+                <input type="password" id="set-client-secret" class="form-input" placeholder="••••••••">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Default Guild / Server ID</label>
+                <input type="text" id="set-guild-id" class="form-input" placeholder="e.g. 998877665544332211">
+              </div>
+              <button type="submit" class="btn btn-primary">Save Integration Settings</button>
+            </form>
+          </div>
+
+          <!-- Managed Webhooks -->
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom:0.75rem;">Managed Discord Webhooks</h3>
+            <div style="background-color:var(--bg-base); padding:0.75rem; border-radius:var(--radius-sm); border:1px solid var(--border); margin-bottom:0.85rem;">
+              <div style="display:grid; grid-template-columns: 1fr 1.6fr auto; gap:0.45rem;">
+                <input type="text" id="new-wh-name" class="form-input" placeholder="Label (e.g. Main Announcements)">
+                <input type="url" id="new-wh-url" class="form-input" placeholder="https://discord.com/api/webhooks/...">
+                <button onclick="saveNewWebhookAction()" class="btn btn-primary btn-sm">+ Save</button>
+              </div>
+            </div>
+            <div id="saved-webhooks-list"></div>
+          </div>
+        </div>
+
+        <!-- Security / Password -->
+        <div class="card" style="max-width:480px;">
+          <h3 class="card-title" style="margin-bottom:0.65rem;">Operator Password Update</h3>
+          <form onsubmit="updatePasswordAction(event)" style="display:grid; grid-template-columns: 1fr 1fr auto; gap:0.5rem; align-items:end;">
+            <div>
+              <label class="form-label">Current Password</label>
+              <input type="password" id="pwd-current" class="form-input" required placeholder="••••••••">
+            </div>
+            <div>
+              <label class="form-label">New Password</label>
+              <input type="password" id="pwd-new" class="form-input" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-secondary" style="height:34px;">Update</button>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL 1: BROADCAST & EMBED STUDIO -->
+  <div class="modal-overlay" id="modal-create-campaign">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="card-title">Discord Broadcast & Embed Studio</h3>
+        <button class="modal-close" onclick="closeModal('modal-create-campaign')">&times;</button>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:0;">
+        <!-- Left Form -->
+        <div>
+          <div class="form-group">
+            <label class="form-label">Campaign Name</label>
+            <input type="text" id="camp-title" class="form-input" placeholder="Weekly Event Broadcast">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Target Webhook (Select Saved or Paste URL)</label>
+            <select id="camp-saved-webhook-select" onchange="selectSavedWebhookForCamp(this.value)" class="form-select" style="margin-bottom:0.35rem;">
+              <option value="">-- Choose from saved webhooks --</option>
+            </select>
+            <input type="url" id="camp-webhook" class="form-input" placeholder="https://discord.com/api/webhooks/...">
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 90px; gap:0.5rem;">
+            <div class="form-group">
+              <label class="form-label">Embed Author Header</label>
+              <input type="text" id="camp-embed-author" oninput="updateLiveEmbedPreview()" class="form-input" placeholder="Server Operations">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Color</label>
+              <input type="color" id="camp-embed-color" oninput="updateLiveEmbedPreview()" class="form-input" value="#4f46e5" style="height:34px; padding:2px;">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Embed Title</label>
+            <input type="text" id="camp-embed-title" oninput="updateLiveEmbedPreview()" class="form-input" placeholder="📢 Official Server Notice">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message / Embed Description</label>
+            <textarea id="camp-content" oninput="updateLiveEmbedPreview()" class="form-textarea" placeholder="Write announcement content (supports Discord markdown)..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Footer Text</label>
+            <input type="text" id="camp-embed-footer" oninput="updateLiveEmbedPreview()" class="form-input" placeholder="Private Owner Control Panel • Verified Transmission">
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+            <div class="form-group">
+              <label class="form-label">Interval (Mins)</label>
+              <input type="number" id="camp-interval" class="form-input" value="60" min="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Max Runs</label>
+              <input type="number" id="camp-runs" class="form-input" value="5" min="1" max="500">
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Live Preview -->
+        <div>
+          <label class="form-label">Live Discord Render Preview</label>
+          <div class="discord-preview-wrap">
+            <div class="discord-msg-header">
+              <strong style="color:#fff; font-size:0.84rem;">Owner Broadcast</strong>
+              <span class="discord-bot-tag">APP</span>
+              <span style="font-size:0.68rem; color:#949ba4;">Today at 12:00 PM</span>
+            </div>
+            <div class="discord-embed-card" id="preview-embed-border">
+              <div class="discord-embed-author" id="preview-embed-author">Server Operations</div>
+              <div class="discord-embed-title" id="preview-embed-title">📢 Official Server Notice</div>
+              <div class="discord-embed-desc" id="preview-embed-desc">Your broadcast content will appear here in real time...</div>
+              <div class="discord-embed-footer" id="preview-embed-footer">Private Owner Control Panel • Verified Transmission</div>
+            </div>
+          </div>
+          <div style="margin-top:1rem; display:flex; flex-direction:column; gap:0.5rem;">
+            <button onclick="testDispatchAction()" class="btn btn-secondary btn-block">⚡ Send Instant Test Transmission</button>
+            <button onclick="createCampaignAction()" class="btn btn-primary btn-block">🚀 Save & Schedule Broadcast</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: TASK JSON INSPECTOR -->
+  <div class="modal-overlay" id="modal-task-inspector">
+    <div class="modal" style="max-width:580px;">
+      <div class="modal-header">
+        <h3 class="card-title" id="inspect-task-title">Task Diagnostics Inspector</h3>
+        <button class="modal-close" onclick="closeModal('modal-task-inspector')">&times;</button>
+      </div>
+      <div id="inspect-task-body" style="font-size:0.8rem;"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
